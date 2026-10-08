@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Route & Routine Transition Hub | 學校路線與常規過渡中心</title>
+    
+    <!-- Tailwind CSS for utility styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti for rewards -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Primary friendly fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            blue: '#3B82F6',
+                            sky: '#0EA5E9',
+                            teal: '#14B8A6',
+                            yellow: '#FBBF24',
+                            amber: '#F59E0B',
+                            green: '#10B981',
+                            red: '#EF4444',
+                            purple: '#8B5CF6',
+                            pink: '#EC4899',
+                            softBlue: '#E0F2FE',
+                            softYellow: '#FEF3C7',
+                            softGreen: '#D1FAE5',
+                            softPurple: '#EDE9FE',
+                        }
+                    },
+                    fontFamily: {
+                        fredoka: ['Fredoka', 'sans-serif'],
+                        nunito: ['Nunito', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'fun': '0 8px 0px 0px rgba(0, 0, 0, 0.15)',
+                        'fun-lg': '0 12px 0px 0px rgba(0, 0, 0, 0.15)',
+                        'fun-sm': '0 4px 0px 0px rgba(0, 0, 0, 0.12)',
+                        'fun-pressed': '0 2px 0px 0px rgba(0, 0, 0, 0.15)',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body {
+            font-family: 'Nunito', 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+            background-color: #F0F9FF;
+            user-select: none;
+        }
+        .font-heading {
+            font-family: 'Fredoka', 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+        }
+        .timer-circle {
+            transition: stroke-dashoffset 0.5s linear, stroke 0.5s ease;
+        }
+        @keyframes dash {
+            to {
+                stroke-dashoffset: -40;
+            }
+        }
+        .animated-route-line {
+            stroke-dasharray: 8, 8;
+            animation: dash 1.5s linear infinite;
+        }
+        @keyframes pulse-node {
+            0% { transform: scale(1); opacity: 0.9; }
+            50% { transform: scale(1.25); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.9; }
+        }
+        .pulse-marker {
+            animation: pulse-node 1.2s infinite ease-in-out;
+        }
+        /* Custom scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #E0F2FE;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #38BDF8;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800 flex flex-col justify-between overflow-x-hidden">
+
+    <header class="bg-white border-b-4 border-sky-200 px-4 py-3 sticky top-0 z-40 shadow-sm">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+            <!-- App Logo -->
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="app.resetView()">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-400 to-yellow-300 flex items-center justify-center text-2xl shadow-fun-sm border-2 border-amber-500 transform -rotate-3 hover:rotate-0 transition-transform">
+                    🗺️
+                </div>
+                <div>
+                    <h1 class="font-heading font-bold text-xl md:text-2xl text-slate-800 tracking-wide flex items-center gap-2">
+                        <span data-i18n="appTitle">School Route & Transition Planner</span>
+                        <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-0.5 rounded-full border border-emerald-300">
+                            🧭 <span data-i18n="visualRouteTag">Visual Wayfinding</span>
+                        </span>
+                    </h1>
+                    <p class="text-xs text-slate-500 font-semibold" data-i18n="appSubtitle">6-Floor Interactive Map & Transition Timer System</p>
+                </div>
+            </div>
+
+            <!-- Controls (Lang, Sound, Voice, Fullscreen) -->
+            <div class="flex items-center flex-wrap gap-2">
+                <!-- Create New Routine Button -->
+                <button onclick="app.openNewRoutineModal()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold px-3.5 py-2 rounded-xl border-2 border-emerald-700 text-xs md:text-sm shadow-fun-sm active:translate-y-0.5 flex items-center gap-1.5">
+                    <i class="fa-solid fa-plus text-sm"></i>
+                    <span data-i18n="btnCreateRoutine">New Routine</span>
+                </button>
+
+                <!-- Language Toggle -->
+                <button id="langToggleBtn" onclick="app.toggleLanguage()" class="flex items-center space-x-1 bg-amber-400 hover:bg-amber-500 text-slate-900 font-extrabold px-3 py-2 rounded-xl border-2 border-amber-600 text-xs md:text-sm shadow-fun-sm active:translate-y-0.5">
+                    <i class="fa-solid fa-language text-base"></i>
+                    <span id="langLabel">繁體中文</span>
+                </button>
+
+                <!-- Audio FX Toggle -->
+                <button id="audioToggleBtn" onclick="app.toggleAudio()" class="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl border-2 border-slate-300 text-sm shadow-fun-sm active:translate-y-0.5" title="Sound Effects">
+                    <i id="audioIcon" class="fa-solid fa-volume-high text-lg text-emerald-600"></i>
+                </button>
+
+                <!-- TTS Toggle -->
+                <button id="ttsToggleBtn" onclick="app.toggleTTS()" class="p-2.5 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-xl border-2 border-purple-300 text-sm shadow-fun-sm active:translate-y-0.5" title="Voice Guidance">
+                    <i id="ttsIcon" class="fa-solid fa-comment-dots text-lg"></i>
+                </button>
+
+                <!-- Fullscreen -->
+                <button onclick="app.toggleFullscreen()" class="p-2.5 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-xl border-2 border-indigo-300 text-sm shadow-fun-sm active:translate-y-0.5 hidden sm:block">
+                    <i class="fa-solid fa-expand text-lg"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-6 w-full flex-grow grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- LEFT COLUMN: Routines Library & Elevation Elevator Tower (5 cols) -->
+        <section class="lg:col-span-5 flex flex-col space-y-6">
+
+            <!-- Routine Selector Library Card -->
+            <div class="bg-white rounded-3xl p-5 border-4 border-sky-100 shadow-md">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="font-heading font-bold text-lg text-slate-800 flex items-center gap-2">
+                        <span class="text-2xl">📋</span>
+                        <span data-i18n="presetRoutines">Transition Routines</span>
+                    </h2>
+                    <span class="text-xs font-bold bg-sky-100 text-sky-800 px-2.5 py-1 rounded-full border border-sky-200" id="routineCountBadge">
+                        4 Routines
+                    </span>
+                </div>
+
+                <!-- List of routines -->
+                <div class="space-y-2.5 max-h-[260px] overflow-y-auto pr-1" id="routineListContainer">
+                    <!-- Dynamic routine cards injected via JS -->
+                </div>
+            </div>
+
+            <!-- 6-Floor Building Elevation Map Simulator -->
+            <div class="bg-white rounded-3xl p-5 border-4 border-amber-100 shadow-md flex-grow flex flex-col">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="font-heading font-bold text-lg text-slate-800 flex items-center gap-2">
+                        <span class="text-2xl">🏫</span>
+                        <span data-i18n="buildingElevationTitle">6-Floor Building Wayfinding</span>
+                    </h2>
+                    <div class="flex items-center space-x-1 text-[11px] font-bold text-slate-500">
+                        <span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span> <span data-i18n="startLabel">Start</span>
+                        <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block ml-2"></span> <span data-i18n="endLabel">End</span>
+                    </div>
+                </div>
+
+                <!-- Elevator / Floor Building Section -->
+                <div class="bg-slate-50 p-3 rounded-2xl border-2 border-slate-200 space-y-2 flex-grow relative overflow-hidden" id="buildingTowerContainer">
+                    <!-- Generated via JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- RIGHT COLUMN: Projector Timer Screen & 2D Floor Plan Visualizer (7 cols) -->
+        <section class="lg:col-span-7 flex flex-col space-y-6">
+
+            <!-- Active Routine & Projector Countdown Card -->
+            <div class="bg-white rounded-3xl p-6 border-4 border-slate-200 shadow-xl flex flex-col justify-between relative overflow-hidden">
+                
+                <!-- Current Active Routine Banner Header -->
+                <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b-2 border-slate-100">
+                    <div class="flex items-center space-x-3">
+                        <span id="activeEmoji" class="text-4xl bg-amber-100 p-2.5 rounded-2xl border-2 border-amber-300 shadow-fun-sm">🎨</span>
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <span id="activeStartEndBadge" class="bg-sky-100 text-sky-800 text-xs font-bold px-2 py-0.5 rounded-full border border-sky-300">
+                                    3/F 302 ➔ 5/F Art Studio
+                                </span>
+                                <span id="activeGoalBadge" class="bg-slate-100 text-slate-700 text-xs font-bold px-2 py-0.5 rounded-full border border-slate-300">
+                                    Goal: 90s
+                                </span>
+                            </div>
+                            <h2 id="activeRoutineTitle" class="font-heading font-extrabold text-2xl text-slate-800 mt-1">Classroom to Visual Arts Studio</h2>
+                        </div>
+                    </div>
+
+                    <!-- Quick Adjust Controls -->
+                    <div class="flex items-center space-x-1.5">
+                        <button onclick="app.addTime(30)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-2.5 py-1.5 rounded-xl border-2 border-slate-300 text-xs shadow-fun-sm active:translate-y-0.5">
+                            +30s
+                        </button>
+                        <button onclick="app.resetTimer()" class="bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold px-2.5 py-1.5 rounded-xl border-2 border-rose-300 text-xs shadow-fun-sm active:translate-y-0.5" title="Reset">
+                            <i class="fa-solid fa-rotate-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Timer & Steps Display Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center my-4">
+
+                    <!-- Giant Circular Timer Display (5 cols) -->
+                    <div class="md:col-span-5 flex flex-col items-center justify-center">
+                        <div class="relative w-56 h-56 flex items-center justify-center">
+                            <!-- SVG Progress Circle -->
+                            <svg class="w-full h-full transform -rotate-90">
+                                <circle cx="112" cy="112" r="95" stroke="#F1F5F9" stroke-width="18" fill="transparent" />
+                                <circle id="timerCircleProgress" class="timer-circle" cx="112" cy="112" r="95" stroke="#10B981" stroke-width="18" stroke-dasharray="596.9" stroke-dashoffset="0" stroke-linecap="round" fill="transparent" />
+                            </svg>
+
+                            <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+                                <span id="timerClockDisplay" class="font-heading font-black text-5xl text-slate-800 tracking-tight">01:30</span>
+                                <span id="timerStatusTag" class="text-[11px] font-black uppercase text-emerald-600 bg-emerald-50 px-3 py-0.5 rounded-full border border-emerald-200 mt-1" data-i18n="statusReady">
+                                    READY
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Start / Pause / Chime Buttons -->
+                        <div class="flex items-center space-x-3 mt-4">
+                            <button id="mainStartBtn" onclick="app.toggleTimer()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold px-7 py-3 rounded-2xl border-b-4 border-emerald-700 text-base shadow-fun flex items-center space-x-2 active:translate-y-1 active:shadow-none transition-all">
+                                <i id="mainStartIcon" class="fa-solid fa-play"></i>
+                                <span id="mainStartText" data-i18n="btnStart">START</span>
+                            </button>
+
+                            <button onclick="app.playAttentionChime()" class="bg-amber-400 hover:bg-amber-500 text-slate-900 font-extrabold px-3.5 py-3 rounded-2xl border-b-4 border-amber-600 text-base shadow-fun active:translate-y-1 active:shadow-none" title="Attention Chime">
+                                🔔
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Step Checklist Display (7 cols) -->
+                    <div class="md:col-span-7 flex flex-col space-y-2.5">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-heading font-bold text-slate-700 text-sm flex items-center gap-2">
+                                <span data-i18n="stepListTitle">Step Checklist</span>
+                                <span id="stepProgressCount" class="text-xs font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md">0/4</span>
+                            </h3>
+                            <button onclick="app.speakSteps()" class="text-xs text-purple-600 font-bold hover:underline flex items-center gap-1">
+                                <i class="fa-solid fa-volume-high"></i> <span data-i18n="readOutSteps">Read Out</span>
+                            </button>
+                        </div>
+
+                        <!-- Step cards container -->
+                        <div class="space-y-2 max-h-[220px] overflow-y-auto pr-1" id="activeStepsContainer">
+                            <!-- Injected via JS -->
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Quick 60-second challenge Banner -->
+                <div class="bg-gradient-to-r from-teal-500 to-emerald-500 rounded-2xl p-3 text-white border-2 border-emerald-600 flex items-center justify-between shadow-fun-sm">
+                    <div class="flex items-center space-x-3">
+                        <span class="text-2xl">⚡</span>
+                        <div>
+                            <h4 class="font-heading font-extrabold text-sm" data-i18n="sprintTitle">60s Rapid Transition Challenge</h4>
+                            <p class="text-[11px] text-teal-100" data-i18n="sprintDesc">Move safely to destination before 60 seconds!</p>
+                        </div>
+                    </div>
+                    <button onclick="app.trigger60sSprint()" class="bg-yellow-400 hover:bg-yellow-300 text-slate-900 font-black px-3.5 py-1.5 rounded-xl border-2 border-yellow-600 text-xs shadow-fun-sm active:translate-y-0.5" data-i18n="btnStartChallenge">
+                        Start Sprint
+                    </button>
+                </div>
+            </div>
+
+            <!-- Interactive 2D Floorplan Wayfinding Canvas -->
+            <div class="bg-white rounded-3xl p-5 border-4 border-indigo-100 shadow-md">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                    <h2 class="font-heading font-bold text-lg text-slate-800 flex items-center gap-2">
+                        <span class="text-2xl">🧭</span>
+                        <span data-i18n="floorplanTitle">Interactive Floor Map Wayfinding</span>
+                    </h2>
+                    
+                    <div class="flex items-center space-x-2">
+                        <!-- Floor View Toggle -->
+                        <button id="viewStartFloorBtn" onclick="app.showFloorDiagram('start')" class="px-2.5 py-1 rounded-lg border text-xs font-bold bg-sky-500 text-white border-sky-600">
+                            Start Floor Map
+                        </button>
+                        <button id="viewEndFloorBtn" onclick="app.showFloorDiagram('end')" class="px-2.5 py-1 rounded-lg border text-xs font-bold bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200">
+                            End Floor Map
+                        </button>
+                    </div>
+                </div>
+
+                <!-- SVG 2D Floor Plan Diagram -->
+                <div class="bg-slate-900 rounded-2xl p-2 border-2 border-slate-700 relative overflow-hidden flex items-center justify-center min-h-[220px]">
+                    <svg id="floorplanCanvas" class="w-full h-auto max-h-[260px]" viewBox="0 0 600 240">
+                        <!-- Rendered via JS -->
+                    </svg>
+
+                    <!-- Overlay Legend Badge -->
+                    <div class="absolute bottom-2 left-2 bg-slate-800/90 text-slate-200 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-slate-600 flex items-center space-x-3 backdrop-blur-sm">
+                        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Room / Origin</span>
+                        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span> Elevator/Stairs</span>
+                        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span> Destination</span>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <footer class="bg-white border-t-2 border-slate-200 py-3 px-4 text-center text-xs text-slate-500 font-semibold">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+            <span>🏫 Visual Classroom Transition & Route Planner • Bilingual Primary School System</span>
+            <span class="text-slate-400">Targeting &lt; 60 Seconds Lost Time</span>
+        </div>
+    </footer>
+
+    <div id="routineModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 border-4 border-sky-300 shadow-2xl">
+            <div class="flex items-center justify-between border-b-2 border-slate-100 pb-3 mb-4">
+                <h3 class="font-heading font-bold text-xl text-slate-800 flex items-center gap-2">
+                    <span>✏️</span>
+                    <span data-i18n="modalRoutineTitle">Create New Route & Routine</span>
+                </h3>
+                <button onclick="app.closeNewRoutineModal()" class="text-slate-400 hover:text-slate-600 text-2xl font-black">&times;</button>
+            </div>
+
+            <form id="newRoutineForm" onsubmit="app.saveNewRoutine(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1" data-i18n="lblRoutineTitleEn">Title (English)</label>
+                    <input type="text" id="inputTitleEn" required placeholder="e.g. Art Room to Library Reading" class="w-full px-3 py-2 border-2 border-slate-200 rounded-xl font-bold focus:border-sky-400 focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1" data-i18n="lblRoutineTitleZh">Title (Traditional Chinese)</label>
+                    <input type="text" id="inputTitleZh" required placeholder="例如：美術室至圖書館閱讀" class="w-full px-3 py-2 border-2 border-slate-200 rounded-xl font-bold focus:border-sky-400 focus:outline-none">
+                </div>
+
+                <!-- Start & End Location Selectors -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1" data-i18n="lblStartLoc">Start Location</label>
+                        <select id="selectStartLoc" class="w-full px-2.5 py-2 border-2 border-slate-200 rounded-xl font-bold focus:border-sky-400 focus:outline-none">
+                            <option value="1F_Classroom">1/F Classroom 102</option>
+                            <option value="2F_STEAM">2/F STEAM Lab</option>
+                            <option value="3F_Classroom">3/F Classroom 302</option>
+                            <option value="4F_Library">4/F Library Lounge</option>
+                            <option value="5F_Art">5/F Visual Art Studio</option>
+                            <option value="6F_Roof">6/F Rooftop Garden</option>
+                            <option value="GF_Hall">G/F Main Hall</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1" data-i18n="lblEndLoc">End Destination</label>
+                        <select id="selectEndLoc" class="w-full px-2.5 py-2 border-2 border-slate-200 rounded-xl font-bold focus:border-sky-400 focus:outline-none">
+                            <option value="5F_Art">5/F Visual Art Studio</option>
+                            <option value="4F_Library">4/F Library Lounge</option>
+                            <option value="6F_Roof">6/F Rooftop Garden</option>
+                            <option value="2F_STEAM">2/F STEAM Lab</option>
+                            <option value="1F_Classroom">1/F Classroom 102</option>
+                            <option value="GF_Hall">G/F Main Hall</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1" data-i18n="lblDuration">Target Time (Seconds)</label>
+                        <input type="number" id="inputDuration" min="15" max="600" value="90" required class="w-full px-3 py-2 border-2 border-slate-200 rounded-xl font-bold focus:border-sky-400 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1" data-i18n="lblEmoji">Icon</label>
+                        <select id="selectEmoji" class="w-full px-3 py-2 border-2 border-slate-200 rounded-xl font-bold focus:border-sky-400 focus:outline-none">
+                            <option value="🎨">🎨 Art / 美術</option>
+                            <option value="📚">📚 Library / 圖書</option>
+                            <option value="🔬">🔬 STEAM Lab / 實驗</option>
+                            <option value="🌱">🌱 Garden / 花園</option>
+                            <option value="⚽">⚽ PE Sport / 體育</option>
+                            <option value="🎒">🎒 Dismissal / 放學</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1" data-i18n="lblSteps">Steps (One step per line)</label>
+                    <textarea id="inputSteps" rows="3" required placeholder="Pack up books&#10;Line up at door&#10;Take Elevator to 5th floor&#10;Enter Art Studio" class="w-full px-3 py-2 border-2 border-slate-200 rounded-xl font-bold focus:border-sky-400 focus:outline-none"></textarea>
+                </div>
+
+                <div class="flex justify-end space-x-2 pt-2">
+                    <button type="button" onclick="app.closeNewRoutineModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 py-2 rounded-xl" data-i18n="btnCancel">Cancel</button>
+                    <button type="submit" class="bg-sky-500 hover:bg-sky-600 text-white font-extrabold px-5 py-2 rounded-xl border-2 border-sky-700 shadow-fun-sm active:translate-y-0.5" data-i18n="btnSave">Save Routine</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Dictionary for Bilingual Engine
+        const i18nDict = {
+            en: {
+                appTitle: "School Route Planner",
+                appSubtitle: "6-Floor Interactive Map & Transition Timer System",
+                visualRouteTag: "Visual Wayfinding",
+                btnCreateRoutine: "New Routine",
+                presetRoutines: "Transition Routines",
+                buildingElevationTitle: "6-Floor Building Wayfinding",
+                startLabel: "Start",
+                endLabel: "End",
+                stepListTitle: "Step Checklist",
+                readOutSteps: "Read Out",
+                sprintTitle: "60s Rapid Transition Challenge",
+                sprintDesc: "Move safely to destination before 60 seconds!",
+                btnStartChallenge: "Start Sprint",
+                floorplanTitle: "Interactive Floor Map Wayfinding",
+                statusReady: "READY",
+                statusRunning: "TRANSITIONING...",
+                statusPaused: "PAUSED",
+                statusComplete: "ARRIVED! GREAT JOB!",
+                btnStart: "START",
+                btnPause: "PAUSE",
+                modalRoutineTitle: "Create New Route & Routine",
+                lblRoutineTitleEn: "Title (English)",
+                lblRoutineTitleZh: "Title (Traditional Chinese)",
+                lblStartLoc: "Start Location",
+                lblEndLoc: "End Destination",
+                lblDuration: "Target Time (Seconds)",
+                lblEmoji: "Icon",
+                lblSteps: "Steps (One per line)",
+                btnCancel: "Cancel",
+                btnSave: "Save Routine",
+                floors: {
+                    "6F": "6/F Rooftop Garden & Astronomy",
+                    "5F": "5/F Visual Art Studio & Music Room",
+                    "4F": "4/F Library & Reading Lounge",
+                    "3F": "3/F Upper Primary Classrooms",
+                    "2F": "2/F STEAM & Robotics Lab",
+                    "1F": "1/F Lower Primary Classrooms",
+                    "G/F": "G/F Main Assembly Hall & Gym"
+                }
+            },
+            zh: {
+                appTitle: "學校路線與常規過渡中心",
+                appSubtitle: "六層樓互動地圖與課堂切換計時器",
+                visualRouteTag: "視覺路線指引",
+                btnCreateRoutine: "新增常規",
+                presetRoutines: "過渡常規路線",
+                buildingElevationTitle: "全校六樓層垂直路線圖",
+                startLabel: "起點",
+                endLabel: "終點",
+                stepListTitle: "分步指引與步驟",
+                readOutSteps: "語音朗讀",
+                sprintTitle: "60秒極速過渡挑戰",
+                sprintDesc: "全班能否在60秒內安全抵達目標場地？",
+                btnStartChallenge: "開始挑戰",
+                floorplanTitle: "平面圖路線指南",
+                statusReady: "準備就緒",
+                statusRunning: "過渡進行中...",
+                statusPaused: "已暫停",
+                statusComplete: "成功抵達！太棒了！",
+                btnStart: "開始倒數",
+                btnPause: "暫停",
+                modalRoutineTitle: "建立新路線與常規",
+                lblRoutineTitleEn: "常規名稱 (英文)",
+                lblRoutineTitleZh: "常規名稱 (繁體中文)",
+                lblStartLoc: "起點位置",
+                lblEndLoc: "終點位置",
+                lblDuration: "目標時間 (秒)",
+                lblEmoji: "圖示",
+                lblSteps: "步驟指引 (每行一步)",
+                btnCancel: "取消",
+                btnSave: "儲存常規",
+                floors: {
+                    "6F": "6樓：空中花園與天文角",
+                    "5F": "5樓：視覺藝術室與音樂室",
+                    "4F": "4樓：圖書館與自主閱讀區",
+                    "3F": "3樓：高年級普通教室",
+                    "2F": "2樓：STEAM 創客實驗室",
+                    "1F": "1樓：低年級普通教室",
+                    "G/F": "地下：學校大禮堂與體育館"
+                }
+            }
+        };
+
+        // Floor Location Definitions
+        const locationRegistry = {
+            "GF_Hall": { floorKey: "G/F", nameEn: "G/F Main Hall", nameZh: "地下 學校大禮堂", x: 80, y: 120 },
+            "1F_Classroom": { floorKey: "1F", nameEn: "1/F Room 102", nameZh: "1樓 102號教室", x: 100, y: 120 },
+            "2F_STEAM": { floorKey: "2F", nameEn: "2/F STEAM Lab", nameZh: "2樓 STEAM實驗室", x: 420, y: 120 },
+            "3F_Classroom": { floorKey: "3F", nameEn: "3/F Room 302", nameZh: "3樓 302號教室", x: 100, y: 120 },
+            "4F_Library": { floorKey: "4F", nameEn: "4/F Library Lounge", nameZh: "4樓 圖書館閱讀區", x: 450, y: 120 },
+            "5F_Art": { floorKey: "5F", nameEn: "5/F Visual Art Studio", nameZh: "5樓 視覺藝術室", x: 480, y: 120 },
+            "6F_Roof": { floorKey: "6F", nameEn: "6/F Rooftop Garden", nameZh: "6樓 空中花園", x: 300, y: 120 },
+        };
+
+        class WebSynthAudio {
+            constructor() {
+                this.ctx = null;
+            }
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+            playChime() {
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, now);
+                osc.frequency.exponentialRampToValueAtTime(1046.50, now + 0.3);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.6);
+            }
+            playAttention() {
+                this.init();
+                if (!this.ctx) return;
+                const freqs = [880, 1108.73, 1318.51];
+                freqs.forEach((f, i) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    const now = this.ctx.currentTime + (i * 0.12);
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(f, now);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 1.0);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 1.0);
+                });
+            }
+            playFanfare() {
+                this.init();
+                if (!this.ctx) return;
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((freq, i) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    const now = this.ctx.currentTime + (i * 0.12);
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.5);
+                });
+            }
+        }
+
+        class AppController {
+            constructor() {
+                this.lang = 'en';
+                this.audioEnabled = true;
+                this.ttsEnabled = true;
+                this.audio = new WebSynthAudio();
+
+                this.routines = [
+                    {
+                        id: 'r_art_3f',
+                        emoji: '🎨',
+                        titleEn: 'Classroom to Visual Arts Studio',
+                        titleZh: '普通教室 至 視覺藝術室過渡',
+                        startLocKey: '3F_Classroom',
+                        endLocKey: '5F_Art',
+                        duration: 90,
+                        stepsEn: [
+                            'Pack up textbooks & stationery ✏️',
+                            'Line up quietly in pairs at classroom door 🚪',
+                            'Take Central Elevator up to 5th Floor 🛗',
+                            'Enter Art Studio gently and take assigned seat 🎨'
+                        ],
+                        stepsZh: [
+                            '整理課本與個人文具 ✏️',
+                            '於教室門口安靜安排成兩列 🚪',
+                            '搭乘中央電梯升至 5 樓 🛗',
+                            '輕聲進入藝術室並就座 🎨'
+                        ]
+                    },
+                    {
+                        id: 'r_steam_4f',
+                        emoji: '🔬',
+                        titleEn: 'Classroom to STEAM Lab',
+                        titleZh: '教室 至 STEAM創客實驗室',
+                        startLocKey: '1F_Classroom',
+                        endLocKey: '2F_STEAM',
+                        duration: 60,
+                        stepsEn: [
+                            'Save computer files & grab notebook 💻',
+                            'Walk up East Stairs to Floor 2 🪜',
+                            'Put on lab apron & sit with project group 🥽'
+                        ],
+                        stepsZh: [
+                            '儲存電腦檔案並攜帶筆記本 💻',
+                            '沿東側樓梯步行至 2 樓 🪜',
+                            '穿上防護衣並於小組桌就座 🥽'
+                        ]
+                    },
+                    {
+                        id: 'r_read_6f',
+                        emoji: '📚',
+                        titleEn: 'Classroom to Rooftop Garden',
+                        titleZh: '教室 至 空中花園自主閱讀',
+                        startLocKey: '3F_Classroom',
+                        endLocKey: '6F_Roof',
+                        duration: 120,
+                        stepsEn: [
+                            'Pick 1 reading book from shelf 📖',
+                            'Take North Elevator to 6th Floor 🛗',
+                            'Find a garden bench and begin silent reading 🌸'
+                        ],
+                        stepsZh: [
+                            '從書架挑選一本閱讀圖書 📖',
+                            '搭乘北側電梯直達 6 樓 🛗',
+                            '於花園長椅就座並開始默讀 🌸'
+                        ]
+                    }
+                ];
+
+                this.activeRoutine = this.routines[0];
+                this.duration = this.activeRoutine.duration;
+                this.remaining = this.activeRoutine.duration;
+                this.timerInterval = null;
+                this.isRunning = false;
+                this.completedSteps = new Set();
+                this.activeDiagramView = 'start'; // 'start' or 'end'
+
+                this.loadLocalStorage();
+                this.init();
+            }
+
+            init() {
+                this.renderRoutinesList();
+                this.renderActiveRoutine();
+                this.renderElevationTower();
+                this.renderFloorplanCanvas();
+                this.updateI18n();
+            }
+
+            loadLocalStorage() {
+                try {
+                    const saved = localStorage.getItem('school_transition_routines');
+                    if (saved) {
+                        const parsed = JSON.parse(saved);
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                            this.routines = parsed;
+                            this.activeRoutine = this.routines[0];
+                        }
+                    }
+                } catch (e) {
+                    console.log('localStorage read error', e);
+                }
+            }
+
+            saveLocalStorage() {
+                try {
+                    localStorage.setItem('school_transition_routines', JSON.stringify(this.routines));
+                } catch (e) {}
+            }
+
+            toggleLanguage() {
+                this.lang = this.lang === 'en' ? 'zh' : 'en';
+                document.getElementById('langLabel').textContent = this.lang === 'en' ? '繁體中文' : 'English';
+                this.updateI18n();
+                this.renderRoutinesList();
+                this.renderActiveRoutine();
+                this.renderElevationTower();
+                this.renderFloorplanCanvas();
+            }
+
+            updateI18n() {
+                const dict = i18nDict[this.lang];
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (dict[key]) {
+                        el.textContent = dict[key];
+                    }
+                });
+            }
+
+            toggleAudio() {
+                this.audioEnabled = !this.audioEnabled;
+                document.getElementById('audioIcon').className = this.audioEnabled 
+                    ? "fa-solid fa-volume-high text-lg text-emerald-600" 
+                    : "fa-solid fa-volume-xmark text-lg text-slate-400";
+            }
+
+            toggleTTS() {
+                this.ttsEnabled = !this.ttsEnabled;
+                document.getElementById('ttsIcon').className = this.ttsEnabled 
+                    ? "fa-solid fa-comment-dots text-lg text-purple-600" 
+                    : "fa-solid fa-comment-slash text-lg text-slate-400";
+            }
+
+            speakText(text) {
+                if (!this.ttsEnabled || !('speechSynthesis' in window)) return;
+                window.speechSynthesis.cancel();
+                const utter = new SpeechSynthesisUtterance(text);
+                utter.lang = this.lang === 'zh' ? 'zh-HK' : 'en-US';
+                utter.rate = 0.95;
+                window.speechSynthesis.speak(utter);
+            }
+
+            renderRoutinesList() {
+                const container = document.getElementById('routineListContainer');
+                container.innerHTML = '';
+                document.getElementById('routineCountBadge').textContent = `${this.routines.length} ${this.lang === 'zh' ? '常規' : 'Routines'}`;
+
+                this.routines.forEach(r => {
+                    const isSelected = r.id === this.activeRoutine.id;
+                    const title = this.lang === 'zh' ? r.titleZh : r.titleEn;
+                    const startLoc = locationRegistry[r.startLocKey];
+                    const endLoc = locationRegistry[r.endLocKey];
+
+                    const card = document.createElement('div');
+                    card.className = `p-3 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${
+                        isSelected 
+                            ? 'bg-sky-100 border-sky-400 text-slate-900 font-extrabold shadow-fun-sm' 
+                            : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 font-bold'
+                    }`;
+                    card.onclick = () => this.selectRoutine(r);
+
+                    card.innerHTML = `
+                        <div class="flex items-center space-x-3">
+                            <span class="text-2xl">${r.emoji}</span>
+                            <div>
+                                <h4 class="text-xs md:text-sm leading-tight">${title}</h4>
+                                <span class="text-[10px] text-slate-500 font-bold">
+                                    ${startLoc ? startLoc.floorKey : ''} ➔ ${endLoc ? endLoc.floorKey : ''} • ${r.duration}s
+                                </span>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-xs ${isSelected ? 'text-sky-600' : 'text-slate-300'}"></i>
+                    `;
+                    container.appendChild(card);
+                });
+            }
+
+            selectRoutine(r) {
+                this.activeRoutine = r;
+                this.resetTimer();
+                this.renderRoutinesList();
+                this.renderActiveRoutine();
+                this.renderElevationTower();
+                this.renderFloorplanCanvas();
+            }
+
+            renderActiveRoutine() {
+                if (!this.activeRoutine) return;
+
+                const title = this.lang === 'zh' ? this.activeRoutine.titleZh : this.activeRoutine.titleEn;
+                const startLoc = locationRegistry[this.activeRoutine.startLocKey];
+                const endLoc = locationRegistry[this.activeRoutine.endLocKey];
+                const steps = this.lang === 'zh' ? this.activeRoutine.stepsZh : this.activeRoutine.stepsEn;
+
+                document.getElementById('activeEmoji').textContent = this.activeRoutine.emoji;
+                document.getElementById('activeRoutineTitle').textContent = title;
+                document.getElementById('activeStartEndBadge').textContent = `${startLoc ? (this.lang === 'zh' ? startLoc.nameZh : startLoc.nameEn) : ''} ➔ ${endLoc ? (this.lang === 'zh' ? endLoc.nameZh : endLoc.nameEn) : ''}`;
+                document.getElementById('activeGoalBadge').textContent = `Goal: ${this.activeRoutine.duration}s`;
+
+                // Render steps
+                const container = document.getElementById('activeStepsContainer');
+                container.innerHTML = '';
+                this.completedSteps.clear();
+
+                steps.forEach((stepText, idx) => {
+                    const card = document.createElement('div');
+                    card.id = `step-item-${idx}`;
+                    card.className = "p-2.5 rounded-2xl border-2 border-slate-200 bg-white hover:border-sky-300 transition-all flex items-center justify-between cursor-pointer shadow-fun-sm";
+                    card.onclick = () => this.toggleStep(idx);
+
+                    card.innerHTML = `
+                        <div class="flex items-center space-x-2.5">
+                            <span class="w-6 h-6 rounded-full bg-sky-100 text-sky-700 font-extrabold text-xs flex items-center justify-center border border-sky-300">
+                                ${idx + 1}
+                            </span>
+                            <span class="text-xs font-bold text-slate-800">${stepText}</span>
+                        </div>
+                        <div id="check-box-${idx}" class="w-5 h-5 rounded-lg border-2 border-slate-300 flex items-center justify-center text-white text-xs">
+                            <i class="fa-solid fa-check hidden"></i>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+
+                this.updateStepProgressUI();
+            }
+
+            toggleStep(idx) {
+                if (this.completedSteps.has(idx)) {
+                    this.completedSteps.delete(idx);
+                } else {
+                    this.completedSteps.add(idx);
+                }
+
+                const card = document.getElementById(`step-item-${idx}`);
+                const box = document.getElementById(`check-box-${idx}`);
+
+                if (this.completedSteps.has(idx)) {
+                    card.className = "p-2.5 rounded-2xl border-2 border-emerald-400 bg-emerald-50 opacity-90 transition-all flex items-center justify-between cursor-pointer shadow-fun-sm";
+                    box.className = "w-5 h-5 rounded-lg bg-emerald-500 border-2 border-emerald-600 flex items-center justify-center text-white text-xs";
+                    box.querySelector('i').classList.remove('hidden');
+                } else {
+                    card.className = "p-2.5 rounded-2xl border-2 border-slate-200 bg-white hover:border-sky-300 transition-all flex items-center justify-between cursor-pointer shadow-fun-sm";
+                    box.className = "w-5 h-5 rounded-lg border-2 border-slate-300 flex items-center justify-center text-white text-xs";
+                    box.querySelector('i').classList.add('hidden');
+                }
+
+                this.updateStepProgressUI();
+            }
+
+            updateStepProgressUI() {
+                const total = this.activeRoutine ? (this.lang === 'zh' ? this.activeRoutine.stepsZh.length : this.activeRoutine.stepsEn.length) : 0;
+                document.getElementById('stepProgressCount').textContent = `${this.completedSteps.size}/${total}`;
+            }
+
+            speakSteps() {
+                if (!this.activeRoutine) return;
+                const steps = this.lang === 'zh' ? this.activeRoutine.stepsZh : this.activeRoutine.stepsEn;
+                this.speakText(steps.join('. '));
+            }
+
+            renderElevationTower() {
+                const container = document.getElementById('buildingTowerContainer');
+                container.innerHTML = '';
+
+                const floors = ["6F", "5F", "4F", "3F", "2F", "1F", "G/F"];
+                const startLoc = locationRegistry[this.activeRoutine.startLocKey];
+                const endLoc = locationRegistry[this.activeRoutine.endLocKey];
+
+                const startFloor = startLoc ? startLoc.floorKey : "1F";
+                const endFloor = endLoc ? endLoc.floorKey : "5F";
+
+                floors.forEach(fKey => {
+                    const isStart = fKey === startFloor;
+                    const isEnd = fKey === endFloor;
+                    const floorLabel = i18nDict[this.lang].floors[fKey];
+
+                    const row = document.createElement('div');
+                    row.className = `p-2 rounded-xl border-2 flex items-center justify-between text-xs transition-all ${
+                        isStart 
+                            ? 'bg-rose-100 border-rose-400 text-rose-900 font-extrabold shadow-fun-sm' 
+                            : isEnd 
+                                ? 'bg-emerald-100 border-emerald-400 text-emerald-900 font-extrabold shadow-fun-sm'
+                                : 'bg-white border-slate-200 text-slate-600 font-bold opacity-80'
+                    }`;
+
+                    row.innerHTML = `
+                        <div class="flex items-center space-x-2">
+                            <span class="w-7 h-7 rounded-lg ${isStart ? 'bg-rose-500 text-white' : isEnd ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-700'} font-black text-xs flex items-center justify-center">
+                                ${fKey}
+                            </span>
+                            <span class="text-xs truncate max-w-[180px]">${floorLabel}</span>
+                        </div>
+
+                        <div class="flex items-center space-x-1.5">
+                            ${isStart ? `<span class="bg-rose-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full pulse-marker">START</span>` : ''}
+                            ${isEnd ? `<span class="bg-emerald-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full pulse-marker">END</span>` : ''}
+                            <span class="text-slate-400 text-xs">🛗</span>
+                        </div>
+                    `;
+                    container.appendChild(row);
+                });
+            }
+
+            showFloorDiagram(view) {
+                this.activeDiagramView = view;
+                document.getElementById('viewStartFloorBtn').className = view === 'start'
+                    ? 'px-2.5 py-1 rounded-lg border text-xs font-bold bg-sky-500 text-white border-sky-600'
+                    : 'px-2.5 py-1 rounded-lg border text-xs font-bold bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200';
+                
+                document.getElementById('viewEndFloorBtn').className = view === 'end'
+                    ? 'px-2.5 py-1 rounded-lg border text-xs font-bold bg-sky-500 text-white border-sky-600'
+                    : 'px-2.5 py-1 rounded-lg border text-xs font-bold bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200';
+
+                this.renderFloorplanCanvas();
+            }
+
+            renderFloorplanCanvas() {
+                const canvas = document.getElementById('floorplanCanvas');
+                const startLoc = locationRegistry[this.activeRoutine.startLocKey];
+                const endLoc = locationRegistry[this.activeRoutine.endLocKey];
+
+                const currentLoc = this.activeDiagramView === 'start' ? startLoc : endLoc;
+                if (!currentLoc) return;
+
+                const roomName = this.lang === 'zh' ? currentLoc.nameZh : currentLoc.nameEn;
+
+                canvas.innerHTML = `
+                    <!-- Background Grid -->
+                    <rect x="0" y="0" width="600" height="240" fill="#0F172A" rx="12" />
+                    
+                    <!-- Corridor Path -->
+                    <rect x="40" y="100" width="520" height="40" fill="#1E293B" rx="8" stroke="#334155" stroke-width="2" />
+                    <text x="300" y="125" fill="#64748B" font-size="12" font-weight="bold" text-anchor="middle">MAIN CORRIDOR 通道</text>
+
+                    <!-- Elevator Node Left -->
+                    <rect x="50" y="30" width="80" height="50" fill="#3B82F6" rx="8" stroke="#60A5FA" stroke-width="2" />
+                    <text x="90" y="60" fill="#FFFFFF" font-size="11" font-weight="bold" text-anchor="middle">🛗 ELEVATOR</text>
+
+                    <!-- Stairwell Node Right -->
+                    <rect x="470" y="30" width="80" height="50" fill="#8B5CF6" rx="8" stroke="#A78BFA" stroke-width="2" />
+                    <text x="510" y="60" fill="#FFFFFF" font-size="11" font-weight="bold" text-anchor="middle">🪜 STAIRS</text>
+
+                    <!-- Specific Destination Room -->
+                    <rect x="${currentLoc.x - 60}" y="160" width="120" height="55" fill="${this.activeDiagramView === 'start' ? '#EF4444' : '#10B981'}" rx="10" stroke="#FFFFFF" stroke-width="3" />
+                    <text x="${currentLoc.x}" y="192" fill="#FFFFFF" font-size="11" font-weight="extrabold" text-anchor="middle">${roomName}</text>
+
+                    <!-- Animated Wayfinding Path Lines -->
+                    <path d="M ${currentLoc.x} 160 L ${currentLoc.x} 120 L 90 120 L 90 80" 
+                          fill="none" stroke="#FBBF24" stroke-width="4" class="animated-route-line" />
+
+                    <!-- Moving Avatar Circle -->
+                    <circle cx="${currentLoc.x}" cy="160" r="8" fill="#FBBF24" stroke="#FFFFFF" stroke-width="2" class="pulse-marker" />
+                `;
+            }
+
+            // Timer Logic
+            toggleTimer() {
+                if (this.isRunning) {
+                    this.pauseTimer();
+                } else {
+                    this.startTimer();
+                }
+            }
+
+            startTimer() {
+                if (this.remaining <= 0) return;
+                this.isRunning = true;
+
+                document.getElementById('mainStartIcon').className = "fa-solid fa-pause";
+                document.getElementById('mainStartText').textContent = i18nDict[this.lang].btnPause;
+                document.getElementById('mainStartBtn').className = "bg-amber-500 hover:bg-amber-600 text-slate-900 font-extrabold px-7 py-3 rounded-2xl border-b-4 border-amber-700 text-base shadow-fun flex items-center space-x-2 active:translate-y-1 active:shadow-none transition-all";
+
+                document.getElementById('timerStatusTag').textContent = i18nDict[this.lang].statusRunning;
+                document.getElementById('timerStatusTag').className = "text-[11px] font-black uppercase text-sky-600 bg-sky-50 px-3 py-0.5 rounded-full border border-sky-200 mt-1";
+
+                if (this.audioEnabled) this.audio.playChime();
+
+                const startLoc = locationRegistry[this.activeRoutine.startLocKey];
+                const endLoc = locationRegistry[this.activeRoutine.endLocKey];
+                const announceStr = this.lang === 'zh'
+                    ? `開始過渡。從 ${startLoc ? startLoc.nameZh : ''} 前往 ${endLoc ? endLoc.nameZh : ''}`
+                    : `Transition started. Move from ${startLoc ? startLoc.nameEn : ''} to ${endLoc ? endLoc.nameEn : ''}`;
+                this.speakText(announceStr);
+
+                this.timerInterval = setInterval(() => {
+                    this.remaining--;
+                    this.updateTimerDisplay();
+
+                    if (this.remaining <= 0) {
+                        this.finishTimer();
+                    }
+                }, 1000);
+            }
+
+            pauseTimer() {
+                this.isRunning = false;
+                clearInterval(this.timerInterval);
+
+                document.getElementById('mainStartIcon').className = "fa-solid fa-play";
+                document.getElementById('mainStartText').textContent = i18nDict[this.lang].btnStart;
+                document.getElementById('mainStartBtn').className = "bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold px-7 py-3 rounded-2xl border-b-4 border-emerald-700 text-base shadow-fun flex items-center space-x-2 active:translate-y-1 active:shadow-none transition-all";
+
+                document.getElementById('timerStatusTag').textContent = i18nDict[this.lang].statusPaused;
+                document.getElementById('timerStatusTag').className = "text-[11px] font-black uppercase text-amber-600 bg-amber-50 px-3 py-0.5 rounded-full border border-amber-200 mt-1";
+            }
+
+            resetTimer() {
+                this.pauseTimer();
+                this.duration = this.activeRoutine ? this.activeRoutine.duration : 90;
+                this.remaining = this.duration;
+                this.updateTimerDisplay();
+
+                document.getElementById('timerStatusTag').textContent = i18nDict[this.lang].statusReady;
+                document.getElementById('timerStatusTag').className = "text-[11px] font-black uppercase text-emerald-600 bg-emerald-50 px-3 py-0.5 rounded-full border border-emerald-200 mt-1";
+                this.completedSteps.clear();
+                this.renderActiveRoutine();
+            }
+
+            addTime(seconds) {
+                this.duration += seconds;
+                this.remaining += seconds;
+                this.updateTimerDisplay();
+            }
+
+            updateTimerDisplay() {
+                const mins = Math.floor(this.remaining / 60);
+                const secs = this.remaining % 60;
+                document.getElementById('timerClockDisplay').textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+
+                const circle = document.getElementById('timerCircleProgress');
+                const totalDash = 596.9;
+                const ratio = Math.max(0, this.remaining / this.duration);
+                circle.style.strokeDashoffset = totalDash * (1 - ratio);
+
+                if (ratio > 0.5) circle.setAttribute('stroke', '#10B981');
+                else if (ratio > 0.2) circle.setAttribute('stroke', '#FBBF24');
+                else circle.setAttribute('stroke', '#EF4444');
+            }
+
+            finishTimer() {
+                this.pauseTimer();
+                document.getElementById('timerStatusTag').textContent = i18nDict[this.lang].statusComplete;
+                document.getElementById('timerStatusTag').className = "text-[11px] font-black uppercase text-purple-600 bg-purple-50 px-3 py-0.5 rounded-full border border-purple-200 mt-1 pulse-marker";
+
+                if (this.audioEnabled) this.audio.playFanfare();
+                this.speakText(this.lang === 'zh' ? "順利抵達！太棒了！" : "Arrived safely! Great job class!");
+
+                if (typeof confetti === 'function') {
+                    confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+                }
+            }
+
+            playAttentionChime() {
+                if (this.audioEnabled) this.audio.playAttention();
+                this.speakText(this.lang === 'zh' ? "請全班注意力集中！" : "Class attention please!");
+            }
+
+            trigger60sSprint() {
+                this.activeRoutine = {
+                    id: 'sprint_60',
+                    emoji: '⚡',
+                    titleEn: '60s Rapid Transition Challenge',
+                    titleZh: '60秒極速過渡挑戰',
+                    startLocKey: '1F_Classroom',
+                    endLocKey: '4F_Library',
+                    duration: 60,
+                    stepsEn: ['Stop speaking', 'Pack up items', 'Walk directly to destination'],
+                    stepsZh: ['立刻停止說話', '迅速收理物品', '安靜步行至目的地']
+                };
+                this.resetTimer();
+                this.startTimer();
+            }
+
+            // Modal logic
+            openNewRoutineModal() {
+                document.getElementById('routineModal').classList.remove('hidden');
+            }
+            closeNewRoutineModal() {
+                document.getElementById('routineModal').classList.add('hidden');
+            }
+
+            saveNewRoutine(e) {
+                e.preventDefault();
+                const titleEn = document.getElementById('inputTitleEn').value;
+                const titleZh = document.getElementById('inputTitleZh').value;
+                const startLocKey = document.getElementById('selectStartLoc').value;
+                const endLocKey = document.getElementById('selectEndLoc').value;
+                const duration = parseInt(document.getElementById('inputDuration').value) || 90;
+                const emoji = document.getElementById('selectEmoji').value;
+                const stepsRaw = document.getElementById('inputSteps').value;
+
+                const stepsArr = stepsRaw.split('\n').filter(s => s.trim().length > 0);
+
+                const newR = {
+                    id: `custom_${Date.now()}`,
+                    emoji: emoji,
+                    titleEn: titleEn,
+                    titleZh: titleZh,
+                    startLocKey: startLocKey,
+                    endLocKey: endLocKey,
+                    duration: duration,
+                    stepsEn: stepsArr,
+                    stepsZh: stepsArr
+                };
+
+                this.routines.unshift(newR);
+                this.saveLocalStorage();
+                this.selectRoutine(newR);
+                this.closeNewRoutineModal();
+                document.getElementById('newRoutineForm').reset();
+            }
+
+            resetView() {
+                this.selectRoutine(this.routines[0]);
+            }
+
+            toggleFullscreen() {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(() => {});
+                } else if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        let app;
+        window.addEventListener('DOMContentLoaded', () => {
+            app = new AppController();
+        });
+    </script>
+</body>
+</html>
